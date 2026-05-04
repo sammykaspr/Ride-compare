@@ -1,0 +1,124 @@
+# Pricing rules per provider. INR.
+# Edit freely and restart the backend to apply.
+# Numbers below are reasonable starting points calibrated to Indian metro rates
+# (Bangalore, mid-2025); tune from real receipts logged via /fares/log.
+
+providers:
+  uber:
+    display_name: Uber
+    deep_link:
+      ios: "uber://?action=setPickup&pickup[latitude]={pickup_lat}&pickup[longitude]={pickup_lng}&dropoff[latitude]={drop_lat}&dropoff[longitude]={drop_lng}"
+      android: "uber://?action=setPickup&pickup[latitude]={pickup_lat}&pickup[longitude]={pickup_lng}&dropoff[latitude]={drop_lat}&dropoff[longitude]={drop_lng}"
+      web: "https://m.uber.com/ul/?action=setPickup&pickup[latitude]={pickup_lat}&pickup[longitude]={pickup_lng}&dropoff[latitude]={drop_lat}&dropoff[longitude]={drop_lng}"
+    ride_types:
+      - id: uber_moto
+        label: Bike
+        base: 15
+        per_km: 6
+        per_min: 1
+        min_fare: 25
+        eta_minutes: 4
+      - id: uber_auto
+        label: Auto
+        base: 30
+        per_km: 11
+        per_min: 1.5
+        min_fare: 50
+        eta_minutes: 5
+      - id: uber_go
+        label: Cab
+        base: 50
+        per_km: 13
+        per_min: 2
+        min_fare: 80
+        eta_minutes: 6
+
+  ola:
+    display_name: Ola
+    deep_link:
+      ios: "olacabs://app/launch?lat={pickup_lat}&lng={pickup_lng}&drop_lat={drop_lat}&drop_lng={drop_lng}"
+      android: "olacabs://app/launch?lat={pickup_lat}&lng={pickup_lng}&drop_lat={drop_lat}&drop_lng={drop_lng}"
+      web: "https://book.olacabs.com/?pickup_lat={pickup_lat}&pickup_lng={pickup_lng}&drop_lat={drop_lat}&drop_lng={drop_lng}"
+    ride_types:
+      - id: ola_bike
+        label: Bike
+        base: 15
+        per_km: 5
+        per_min: 1
+        min_fare: 25
+        eta_minutes: 5
+      - id: ola_auto
+        label: Auto
+        base: 30
+        per_km: 10
+        per_min: 1
+        min_fare: 50
+        eta_minutes: 5
+      - id: ola_mini
+        label: Cab
+        base: 50
+        per_km: 12
+        per_min: 2
+        min_fare: 80
+        eta_minutes: 7
+
+  rapido:
+    display_name: Rapido
+    deep_link:
+      ios: "rapido://book?pickup_lat={pickup_lat}&pickup_lng={pickup_lng}&drop_lat={drop_lat}&drop_lng={drop_lng}"
+      android: "rapido://book?pickup_lat={pickup_lat}&pickup_lng={pickup_lng}&drop_lat={drop_lat}&drop_lng={drop_lng}"
+      web: "https://m.rapido.bike/"
+    ride_types:
+      - id: rapido_bike
+        label: Bike
+        base: 20
+        per_km: 5
+        per_min: 1
+        min_fare: 25
+        eta_minutes: 3
+      - id: rapido_auto
+        label: Auto
+        base: 30
+        per_km: 10
+        per_min: 1
+        min_fare: 50
+        eta_minutes: 4
+
+  namma_yatri:
+    display_name: Namma Yatri
+    deep_link:
+      ios: "nammayatri://"
+      android: "nammayatri://"
+      web: "https://nammayatri.in/"
+    ride_types:
+      - id: ny_auto
+        label: Auto
+        base: 30
+        per_km: 15
+        per_min: 0
+        min_fare: 30
+        eta_minutes: 5
+      - id: ny_cab
+        label: Cab
+        base: 100
+        per_km: 18
+        per_min: 0
+        min_fare: 150
+        eta_minutes: 8
+
+# Hour-of-day surge multiplier (24h clock). Used as fallback when no ML model.
+surge_heuristic:
+  default: 1.0
+  hours:
+    "8": 1.4
+    "9": 1.5
+    "10": 1.3
+    "18": 1.4
+    "19": 1.6
+    "20": 1.5
+    "21": 1.3
+    "22": 1.2
+    "23": 1.2
+    "0": 1.5
+    "1": 1.6
+    "2": 1.3

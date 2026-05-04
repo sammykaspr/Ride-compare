@@ -1,0 +1,33 @@
+<!--
+After running `flutter create .` inside flutter_app/, merge these elements into
+android/app/src/main/AndroidManifest.xml.
+
+The <queries> block is required so url_launcher can detect ride-app schemes on
+Android 11+; without it canLaunchUrl returns false even if the apps are installed.
+Add internet permission outside <application> if it isn't there already.
+-->
+
+<uses-permission android:name="android.permission.INTERNET" />
+
+<queries>
+    <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="https" />
+    </intent>
+    <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="uber" />
+    </intent>
+    <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="olacabs" />
+    </intent>
+    <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="rapido" />
+    </intent>
+    <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="nammayatri" />
+    </intent>
+</queries>
