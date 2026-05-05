@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from math import asin, cos, radians, sin, sqrt
+from typing import Optional
 
 import httpx
 
@@ -30,27 +31,65 @@ def _mock(pickup: LatLng, drop: LatLng) -> DistanceResult:
     return DistanceResult(d_km, dur, used_mock=True)
 
 
-async def get_distance(pickup: LatLng, drop: LatLng) -> DistanceResult:
-    s = get_settings()
-    if not s.google_maps_api_key or s.use_mock_distance:
-        return _mock(pickup, drop)
-
-    url = "https://maps.googleapis.com/maps/api/distancematrix/json"
-    params = {
-        "origins": f"{pickup.lat},{pickup.lng}",
-        "destinations": f"{drop.lat},{drop.lng}",
-        "mode": "driving",
-        "key": s.google_maps_api_key,
+async def _via_google_routes(pickup: LatLng, drop: LatLng, key: str) -> Optional[DistanceResult]:
+    url = "https://routes.googleapis.com/directions/v2:computeRoutes"
+    headers = {
+        "X-Goog-Api-Key": key,
+        "X-Goog-FieldMask": "routes.distanceMeters,routes.duration",
+        "Content-Type": "application/json",
+    }
+    body = {
+        "origin": {"location": {"latLng": {"latitude": pickup.lat, "longitude": pickup.lng}}},
+        "destination": {"location": {"latLng": {"latitude": drop.lat, "longitude": drop.lng}}},
+        "travelMode": "DRIVE",
+        "routingPreference": "TRAFFIC_AWARE",
     }
     try:
         async with httpx.AsyncClient(timeout=10) as c:
-            r = await c.get(url, params=params)
+            r = await c.post(url, headers=headers, json=body)
             data = r.json()
-        elem = data["rows"][0]["elements"][0]
-        if elem.get("status") != "OK":
-            return _mock(pickup, drop)
-        d_km = elem["distance"]["value"] / 1000.0
-        dur = elem["duration"]["value"] / 60.0
-        return DistanceResult(round(d_km, 2), round(dur, 1), used_mock=False)
+        route = data["routes"][0]
+        d_km = route["distanceMeters"] / 1000.0
+        dur_s = float(route["duration"].rstrip("s"))
+        return DistanceResult(round(d_km, 2), round(dur_s / 60.0, 1), used_mock=False)
     except (httpx.HTTPError, KeyError, IndexError, ValueError):
+        return None
+
+
+async def _via_osrm(pickup: LatLng, drop: LatLng) -> Optional[DistanceResult]:
+    """Public OSRM demo. Free, no auth, dev-grade only — rate limited."""
+    url = (
+        f"https://router.project-osrm.org/route/v1/driving/"
+        f"{pickup.lng},{pickup.lat};{drop.lng},{drop.lat}"
+    )
+    try:
+        async with httpx.AsyncClient(timeout=10) as c:
+            r = await c.get(url, params={"overview": "false"})
+            data = r.json()
+        if data.get("code") != "Ok" or not data.get("routes"):
+            return None
+        route = data["routes"][0]
+        return DistanceResult(
+            round(route["distance"] / 1000.0, 2),
+            round(route["duration"] / 60.0, 1),
+            used_mock=False,
+        )
+    except (httpx.HTTPError, KeyError, IndexError, ValueError):
+        return None
+
+
+async def get_distance(pickup: LatLng, drop: LatLng) -> DistanceResult:
+    s = get_settings()
+    if s.use_mock_distance:
         return _mock(pickup, drop)
+
+    if s.google_maps_api_key:
+        google = await _via_google_routes(pickup, drop, s.google_maps_api_key)
+        if google is not None:
+            return google
+
+    osrm = await _via_osrm(pickup, drop)
+    if osrm is not None:
+        return osrm
+
+    return _mock(pickup, drop)

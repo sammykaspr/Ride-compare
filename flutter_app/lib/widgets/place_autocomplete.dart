@@ -142,7 +142,7 @@ class _PlaceAutocompleteFieldState
     _hideOverlay();
     final client = ref.read(apiClientProvider);
     try {
-      final latLng = await client.placeDetails(s.placeId);
+      final latLng = s.latLng ?? await client.placeDetails(s.placeId);
       widget.onSelected(
         SelectedPlace(description: s.description, latLng: latLng),
       );

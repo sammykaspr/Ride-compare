@@ -13,7 +13,15 @@ class ApiClient {
 
   Future<List<PlaceSuggestion>> placeAutocomplete(String input,
       {String? sessionToken}) async {
-    if (input.trim().isEmpty || googleMapsKey.isEmpty) return [];
+    if (input.trim().length < 3) return [];
+    if (googleMapsKey.isNotEmpty) {
+      return _googleAutocomplete(input, sessionToken: sessionToken);
+    }
+    return _nominatimSearch(input);
+  }
+
+  Future<List<PlaceSuggestion>> _googleAutocomplete(String input,
+      {String? sessionToken}) async {
     final params = <String, String>{
       'input': input,
       'key': googleMapsKey,
@@ -33,6 +41,32 @@ class ApiClient {
               description: p['description'] as String,
             ))
         .toList();
+  }
+
+  Future<List<PlaceSuggestion>> _nominatimSearch(String input) async {
+    final uri = Uri.https('nominatim.openstreetmap.org', '/search', {
+      'q': input,
+      'format': 'json',
+      'limit': '6',
+      'addressdetails': '0',
+    });
+    final res = await http.get(uri, headers: const {
+      'User-Agent': 'RideCompare/0.1 (dev)',
+      'Accept': 'application/json',
+    });
+    if (res.statusCode != 200) return [];
+    final data = jsonDecode(res.body) as List;
+    return data.map((p) {
+      final m = p as Map<String, dynamic>;
+      return PlaceSuggestion(
+        placeId: '${m['place_id']}',
+        description: m['display_name'] as String,
+        latLng: LatLng(
+          double.parse(m['lat'] as String),
+          double.parse(m['lon'] as String),
+        ),
+      );
+    }).toList();
   }
 
   Future<LatLng> placeDetails(String placeId, {String? sessionToken}) async {

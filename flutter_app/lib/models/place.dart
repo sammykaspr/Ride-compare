@@ -1,8 +1,13 @@
 class PlaceSuggestion {
   final String placeId;
   final String description;
+  final LatLng? latLng;
 
-  const PlaceSuggestion({required this.placeId, required this.description});
+  const PlaceSuggestion({
+    required this.placeId,
+    required this.description,
+    this.latLng,
+  });
 }
 
 class LatLng {
